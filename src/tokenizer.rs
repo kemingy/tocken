@@ -43,7 +43,7 @@ impl Stemmer {
     pub fn stem<'a>(&self, text: &'a str) -> Cow<'a, str> {
         match self {
             Stemmer::Snowball => stemmer(text),
-            Stemmer::None => Cow::Borrowed(&text),
+            Stemmer::None => Cow::Borrowed(text),
         }
     }
 }

@@ -1,10 +1,10 @@
-pub const ENGLISH_LUCENE: &'static [&str] = &[
+pub const ENGLISH_LUCENE: &[&str] = &[
     "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
     "no", "not", "of", "on", "or", "such", "that", "the", "their", "then", "there", "these",
     "they", "this", "to", "was", "will", "with",
 ];
 
-pub const ENGLISH_NLTK: &'static [&str] = &[
+pub const ENGLISH_NLTK: &[&str] = &[
     "a",
     "about",
     "above",
