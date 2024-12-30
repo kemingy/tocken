@@ -6,11 +6,11 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use tantivy_stemmers::algorithms::english_porter_2;
+use tantivy_stemmers::algorithms::english_porter as stemmer;
 use unicode_normalization::UnicodeNormalization;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::stopwords::ENGLISH;
+use crate::stopwords::ENGLISH_LUCENE;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Normalization {
@@ -35,16 +35,30 @@ impl Normalization {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Stemmer {
-    Porter2,
+    Snowball,
     None,
 }
 
 impl Stemmer {
     pub fn stem<'a>(&self, text: &'a str) -> Cow<'a, str> {
         match self {
-            Stemmer::Porter2 => english_porter_2(text),
+            Stemmer::Snowball => stemmer(text),
             Stemmer::None => Cow::Borrowed(&text),
         }
+    }
+}
+
+pub fn english_possessive_filter(text: &str) -> Option<String> {
+    match text.len() > 2 && text.ends_with("s") {
+        true => {
+            let chars = text.chars().collect::<Vec<_>>();
+            let c = chars[chars.len() - 2];
+            match c {
+                '\'' | '\u{2019}' | '\u{FF07}' => Some(chars[..chars.len() - 2].iter().collect()),
+                _ => None,
+            }
+        }
+        false => None,
     }
 }
 
@@ -52,7 +66,6 @@ impl Stemmer {
 pub struct Tokenizer {
     stopwords: HashSet<String>,
     norm: Normalization,
-    lowercase: bool,
     stemmer: Stemmer,
     table: HashMap<String, u32>,
 }
@@ -60,10 +73,9 @@ pub struct Tokenizer {
 impl Default for Tokenizer {
     fn default() -> Self {
         Self {
-            stopwords: HashSet::from_iter(ENGLISH.iter().map(|&s| s.to_string())),
+            stopwords: HashSet::from_iter(ENGLISH_LUCENE.iter().map(|&s| s.to_string())),
             norm: Normalization::None,
-            lowercase: true,
-            stemmer: Stemmer::Porter2,
+            stemmer: Stemmer::Snowball,
             table: HashMap::new(),
         }
     }
@@ -72,11 +84,8 @@ impl Default for Tokenizer {
 impl Tokenizer {
     pub fn fit(&mut self, contents: &[String]) {
         for content in contents {
-            let expect_case = match self.lowercase {
-                true => content.to_lowercase(),
-                false => content.to_owned(),
-            };
-            for word in expect_case.unicode_words() {
+            let lowercase = content.to_lowercase();
+            for word in lowercase.unicode_words() {
                 if self.stopwords.contains(word) {
                     continue;
                 }
@@ -88,16 +97,17 @@ impl Tokenizer {
     }
 
     pub fn tokenize(&self, content: &str) -> Vec<u32> {
-        let expect_case = match self.lowercase {
-            true => content.to_lowercase(),
-            false => content.to_string(),
-        };
+        let lowercase = content.to_lowercase();
         let mut tokens = Vec::new();
-        for word in expect_case.unicode_words() {
-            if self.stopwords.contains(word) {
+        for word in lowercase.unicode_words() {
+            let word = match english_possessive_filter(word) {
+                Some(w) => w,
+                None => word.to_string(),
+            };
+            if self.stopwords.contains(&word) {
                 continue;
             }
-            let token = self.norm.normalize(self.stemmer.stem(word).as_ref());
+            let token = self.norm.normalize(self.stemmer.stem(&word).as_ref());
             if let Some(&id) = self.table.get(&token) {
                 tokens.push(id);
             }
@@ -129,5 +139,30 @@ impl Tokenizer {
 
     pub fn vocab_len(&self) -> usize {
         self.table.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tokenizer::english_possessive_filter;
+
+    #[test]
+    fn test_english_possessive_filter() {
+        let cases = [
+            ("John's", "John"),
+            ("John’s", "John"),
+            ("John＇s", "John"),
+            ("Johns", "Johns"),
+            ("John", "John"),
+            ("Johns'", "Johns'"),
+            ("John'ss", "John'ss"),
+            ("'s", "'s"),
+        ];
+
+        for (text, expected) in cases.iter() {
+            if let Some(res) = english_possessive_filter(text) {
+                assert_eq!(res, *expected);
+            }
+        }
     }
 }

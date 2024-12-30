@@ -7,6 +7,6 @@ edition = "2021"
 regex = "1.11.1"
 serde = "1.0.216"
 serde_json = "1.0.133"
-tantivy-stemmers = "0.4.0"
+tantivy-stemmers = { version = "0.4.0", default-features = false, features = ["english_porter"] }
 unicode-normalization = "0.1.24"
 unicode-segmentation = "1.12.0"

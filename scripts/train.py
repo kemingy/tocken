@@ -30,13 +30,13 @@ def batch_iterator(batch_size=1000):
 
 
 tk = Tokenizer(model=models.WordLevel(unk_token="[UNK]"))
-# tk.normalizer = normalizers.Sequence(
-#     [
-#         normalizers.NFKC(),
-#         normalizers.Lowercase(),
-#         normalizers.StripAccents(),
-#     ]
-# )
+tk.normalizer = normalizers.Sequence(
+    [
+        normalizers.NFKC(),
+        normalizers.Lowercase(),
+        normalizers.StripAccents(),
+    ]
+)
 tk.pre_tokenizer = pre_tokenizers.Whitespace()
 trainer = trainers.WordLevelTrainer(vocab_size=500000, special_tokens=["[UNK]"])
 
