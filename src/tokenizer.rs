@@ -12,7 +12,7 @@ use tantivy_stemmers::algorithms::english_porter as stemmer;
 use unicode_normalization::UnicodeNormalization;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::stopwords::ENGLISH_NLTK;
+use crate::stopwords::{CHINESE_NLTK_SINGLE, CJK_LUCENE, ENGLISH_LUCENE, ENGLISH_NLTK};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Unicode normalization.
@@ -95,7 +95,15 @@ pub struct Tokenizer {
 impl Default for Tokenizer {
     fn default() -> Self {
         Self {
-            stopwords: HashSet::from_iter(ENGLISH_NLTK.iter().map(|&s| s.to_string())),
+            stopwords: [
+                ENGLISH_LUCENE,
+                CJK_LUCENE,
+                ENGLISH_NLTK,
+                CHINESE_NLTK_SINGLE,
+            ]
+            .into_iter()
+            .flat_map(|slice| slice.iter().map(|x| x.to_string()))
+            .collect(),
             norm: Normalization::None,
             stemmer: Stemmer::Snowball,
             table: HashMap::new(),
