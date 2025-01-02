@@ -2,8 +2,20 @@
 name = "tocken"
 version = "0.1.0"
 edition = "2021"
+authors = ["Keming <kemingy94@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/kemingy/tocken"
+description = "Clustering algorithms."
+documentation = "https://docs.rs/tocken"
+keywords = ["text", "nlp", "tokenizer", "machine-learning", "vector-search"]
+categories = ["algorithms", "science"]
+rust-version = "1.78"
 
 [dependencies]
+argh = "0.1.13"
+env_logger = "0.11.6"
+log = "0.4.22"
 regex = "1.11.1"
 serde = "1.0.216"
 serde_json = "1.0.133"
